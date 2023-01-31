@@ -8,7 +8,6 @@ playGame();
 
 function playGame() {
   let boardSize = null;
-  const board = [];
 
   const redX = "\x1b[31mX\x1b[0m ";
   const yellowO = "\x1b[33mO\x1b[0m ";
@@ -26,6 +25,7 @@ function playGame() {
 
   function askForBoardSize() {
     let chosenSize = rl.question("\nPlease enter a number between 5-10: ");
+    // let chosenSize = 5;
     if (
       /\b[5-9]\b|\b(10)\b/.test(chosenSize) &&
       Number.isInteger(parseInt(chosenSize)) &&
@@ -41,7 +41,7 @@ function playGame() {
   //
   //
   function buildBoard(size) {
-    // const board = [];
+    board = [];
     for (let i = 0; i < size; i++) {
       let row = [];
       for (let j = 0; j < size; j++) {
@@ -54,9 +54,8 @@ function playGame() {
   //
   //
   function placeShips(board) {
-    const occupiedCoordinates = new Set();
-    for (let i = 0; i < ships.length; i++) {
-      let ship = ships[i];
+    let occupiedCoordinates = new Set();
+    ships.forEach((ship) => {
       let orientation = Math.random() >= 0.5 ? "horizontal" : "vertical";
       let coordinates = [];
       let isValid = false;
@@ -86,50 +85,11 @@ function playGame() {
       console.log(
         `\n\x1b[34m${ship.name}\x1b[0m \x1b[36m${ship.location}\x1b[0m`
       );
-    }
+    });
     playerTurn();
   }
   //
   //
-  //
-  // function placeShips(board) {
-  //   const occupiedCoordinates = new Set();
-  //   ships.forEach((ship) => {
-  //     let orientation = Math.random() >= 0.5 ? "horizontal" : "vertical";
-  //     let coordinates = [];
-  //     let isValid = false;
-  //     while (!isValid) {
-  //       if (orientation === "horizontal") {
-  //         let startX = Math.floor(Math.random() * (boardSize - ship.size + 1));
-  //         let startY = Math.floor(Math.random() * boardSize);
-  //         coordinates = [];
-  //         for (let i = startX; i < startX + ship.size; i++) {
-  //           coordinates.push(board[startY][i]);
-  //         }
-  //       } else {
-  //         let startX = Math.floor(Math.random() * boardSize);
-  //         let startY = Math.floor(Math.random() * (boardSize - ship.size + 1));
-  //         coordinates = [];
-  //         for (let i = startY; i < startY + ship.size; i++) {
-  //           coordinates.push(board[i][startX]);
-  //         }
-  //       }
-  //       isValid = coordinates.every(
-  //         (coordinate) => !occupiedCoordinates.has(coordinate)
-  //       );
-  //     }
-  //     coordinates.forEach((coordinate) => occupiedCoordinates.add(coordinate));
-  //     ship.location = coordinates;
-
-  //     console.log(
-  //       `\n\x1b[34m${ship.name}\x1b[0m \x1b[36m${ship.location}\x1b[0m`
-  //     );
-  //   });
-  //   playerTurn();
-  // }
-  //
-  //
-
   function playerTurn() {
     const triedAndHit = [];
     const triedAndMiss = [];
@@ -139,76 +99,74 @@ function playGame() {
       "\n\x1b[35mEnter a location to strike ie 'A2'\x1b[0m\n"
     );
     answer = answer.toUpperCase();
-    const validCoordinates = getValidCoordinates();
-    // console.log(validCoordinates);
-    if (!validCoordinates.has(answer)) {
+
+    if (!getValidCoordinates().has(answer)) {
       console.log(
         "\x1b[36mInvalid coordinates. Please enter a valid coordinate on the board.\x1b[0m"
       );
-      playerTurn();
+      return playerTurn();
     }
+
     let x = answer.charCodeAt(0) - 65;
     let y = parseInt(answer.slice(1)) - 1;
-    // let hit = false;
-    // let alreadyTried = false;
+    let isHit = false;
 
     for (let i = 0; i < ships.length; i++) {
       let ship = ships[i];
-      if (ship.location.includes(answer)) {
-        if (!triedAndHit.includes(answer)) {
-          ship.hits++;
-          console.log(ship.name);
-          console.log(ship.hits);
-          console.log("\n\x1b[31mHIT\x1b[0m");
-          board[x][y] = "X";
-          triedAndHit.push(answer);
-          if (ship.hits === ship.size) {
-            console.log(
-              "\n\x1b[1;4;32mYou sank the " + ship.name + "!\x1b[0m\n"
-            );
-          }
-          printNewBoard();
-        } else if (triedAndHit.includes(answer)) {
-          console.log(
-            "\x1b[38;2;255;165;0mYou have already picked this location, and it was a hit!\x1b[0m"
-          );
-          playerTurn();
-        }
-      } else if (
-        !ship.location.includes(answer) &&
-        !triedAndMiss.includes(answer)
-      ) {
-        console.log("\n\x1b[33mYou have missed!\x1b[0m");
-        board[x][y] = "O";
-        triedAndMiss.push(answer);
-        printNewBoard();
-      } else if (triedAndMiss.includes(answer)) {
+      console.log(ship.name);
+      if (!ship.location.includes(answer)) {
+        continue;
+      }
+
+      if (triedAndHit.includes(answer)) {
+        console.log(
+          "\x1b[38;2;255;165;0mYou have already picked this location, and it was a hit!\x1b[0m"
+        );
+        return playerTurn();
+      }
+
+      ship.hits++;
+      console.log(ship.name);
+      console.log(ship.hits);
+      console.log("\n\x1b[31mHIT\x1b[0m");
+      board[x][y] = "X";
+      triedAndHit.push(answer);
+      isHit = true;
+
+      if (ship.hits === ship.size) {
+        console.log("\n\x1b[1;4;32mYou sank the " + ship.name + "!\x1b[0m\n");
+      }
+      break;
+    }
+
+    if (!isHit) {
+      if (triedAndMiss.includes(answer)) {
         console.log(
           "\x1b[38;2;255;165;0mYou have already picked this location. Miss!\x1b[0m"
         );
-        playerTurn();
+        return playerTurn();
       }
+      console.log("\n\x1b[33mYou have missed!\x1b[0m");
+      board[x][y] = "O";
+      triedAndMiss.push(answer);
+    }
 
-      let allSunk = true;
-      for (let i = 0; i < ships.length; i++) {
-        if (ships[i].hits < ships[i].size) {
-          allSunk = false;
-          // break;
-        }
-      }
-      if (allSunk) {
-        askIfDone();
-      } else {
-        playerTurn();
+    printNewBoard();
+
+    let allSunk = true;
+    for (let i = 0; i < ships.length; i++) {
+      if (ships[i].hits < ships[i].size) {
+        allSunk = false;
+        break;
       }
     }
+
+    if (allSunk) {
+      askIfDone();
+    } else {
+      playerTurn();
+    }
   }
-
-  // if (alreadyTried) {
-  //   playerTurn();
-  // }
-  // printNewBoard();
-
   //
   //
   function printNewBoard() {
